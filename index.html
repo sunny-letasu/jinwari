@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="ボタンを押すと、柚子湯やココアなどあったかい言葉が降ってきて積もっていく小さなサイト。">
+<meta name="theme-color" content="#E6EAEF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161E" media="(prefers-color-scheme: dark)">
+<title>じんわりしみるよ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<style>
+html { -webkit-text-size-adjust: 100%; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; }
+/* Layout: one full screen of winter-window mist; a round yuzu-colored "cup" button in the center; words fall, pile on the floor and on the cup; the room warms as the pile grows. */
+:root {
+  --bg: #E6EAEF;
+  --bg-2: #D6DDE5;
+  --ink: #2C2A31;
+  --muted: #6C6F7A;
+  --line: #C3CAD3;
+  --warm: #F4B45E;
+  --btn: #E39A33;
+  --btn-hi: #F7CE70;
+  --btn-ink: #3A230E;
+  --chip-ink: #2A1B10;
+  --chip-shadow: rgba(60, 40, 20, .18);
+  --yuzu: #F5CC57;
+  --cocoa: #CFA286;
+  --ume: #EEA8AE;
+  --matcha: #B9CD8C;
+  --ember: #F2A36C;
+  --font-display: "Kaisei Decol", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-body: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161E; --bg-2: #1B212C; --ink: #EDE5D8; --muted: #9A9AA3; --line: #2E3644;
+    --warm: #B8652A; --btn: #D88E2C; --btn-hi: #F2BD58; --btn-ink: #2A190A;
+    --chip-ink: #24170D; --chip-shadow: rgba(0, 0, 0, .45);
+    --yuzu: #E8B840; --cocoa: #BC8E75; --ume: #DC8F97; --matcha: #A0B772; --ember: #E58C57;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161E; --bg-2: #1B212C; --ink: #EDE5D8; --muted: #9A9AA3; --line: #2E3644;
+  --warm: #B8652A; --btn: #D88E2C; --btn-hi: #F2BD58; --btn-ink: #2A190A;
+  --chip-ink: #24170D; --chip-shadow: rgba(0, 0, 0, .45);
+  --yuzu: #E8B840; --cocoa: #BC8E75; --ume: #DC8F97; --matcha: #A0B772; --ember: #E58C57;
+  color-scheme: dark;
+}
+
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: manipulation; }
+body {
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  color: var(--ink);
+  font-family: var(--font-body);
+  overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.heat {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(120% 70% at 50% 105%, var(--warm) 0%, transparent 70%);
+  opacity: var(--heat, 0);
+  transition: opacity 1.6s ease;
+}
+
+.stage { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+
+.word {
+  position: absolute; top: 0; left: 0;
+  will-change: transform;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: clamp(15px, 1.1vw + 10px, 22px);
+  line-height: 1;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  padding: .55em 1.05em .5em;
+  border-radius: 999px;
+  color: var(--chip-ink);
+  background: var(--c);
+  box-shadow: 0 2px 0 var(--chip-shadow);
+  opacity: 0;
+}
+.word.in { animation: seep 1.8s ease-out forwards; }
+.word.out { transition: opacity .7s ease, filter .7s ease; opacity: 0 !important; filter: blur(6px); animation: none; }
+@keyframes seep {
+  0%   { opacity: 0;  filter: blur(7px); box-shadow: 0 0 28px 6px var(--c); }
+  35%  { opacity: .9; filter: blur(2px); box-shadow: 0 0 22px 4px var(--c); }
+  100% { opacity: 1;  filter: blur(0);   box-shadow: 0 2px 0 var(--chip-shadow); }
+}
+.c-yuzu { --c: var(--yuzu); }
+.c-cocoa { --c: var(--cocoa); }
+.c-ume { --c: var(--ume); }
+.c-matcha { --c: var(--matcha); }
+.c-ember { --c: var(--ember); }
+
+.center {
+  position: fixed; inset: 0; z-index: 2;
+  display: grid; place-items: center; pointer-events: none;
+}
+.cup-wrap { position: relative; display: grid; place-items: center; gap: 18px; }
+.cup {
+  pointer-events: auto;
+  position: relative;
+  width: var(--cup-size); aspect-ratio: 1; max-width: 100%;
+  border: 0; border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, var(--btn-hi) 0%, var(--btn) 62%);
+  color: var(--btn-ink);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: calc(var(--cup-size) * .125);
+  line-height: 1.45;
+  letter-spacing: .08em;
+  cursor: pointer;
+  box-shadow: 0 10px 30px -8px var(--chip-shadow), inset 0 -6px 0 rgba(0,0,0,.08);
+  transition: transform .18s ease, box-shadow .18s ease;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none; user-select: none;
+}
+@media (hover: hover) { .cup:hover { transform: translateY(-2px); } }
+.cup:active, .cup.pressing { transform: translateY(1px) scale(.975); box-shadow: 0 4px 14px -6px var(--chip-shadow), inset 0 -3px 0 rgba(0,0,0,.08); }
+.cup:focus-visible { outline: 3px solid var(--ink); outline-offset: 6px; }
+.cup span { display: block; pointer-events: none; }
+
+.ring {
+  position: absolute; left: 50%; top: 50%;
+  width: var(--cup-size); aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid var(--btn);
+  transform: translate(-50%, -50%) scale(1);
+  opacity: .7;
+  pointer-events: none;
+  animation: ring 1.4s ease-out forwards;
+}
+@keyframes ring { to { transform: translate(-50%, -50%) scale(1.9); opacity: 0; } }
+
+.hint {
+  position: absolute; top: calc(100% + 18px); left: 50%; transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 13px; color: var(--muted); letter-spacing: .06em;
+}
+
+.hud {
+  position: fixed; z-index: 3; left: 0; right: 0;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding-left: calc(20px + env(safe-area-inset-left, 0px));
+  padding-right: calc(20px + env(safe-area-inset-right, 0px));
+  pointer-events: none;
+  font-size: 13px; color: var(--muted);
+}
+.hud.top { top: 0; padding-top: calc(18px + env(safe-area-inset-top, 0px)); align-items: flex-start; }
+.hud.bottom { bottom: 0; padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+.hud > * { pointer-events: auto; }
+
+.brand { font-family: var(--font-display); font-size: 17px; color: var(--ink); letter-spacing: .12em; }
+
+.thermo { display: grid; justify-items: end; gap: 6px; text-align: right; }
+.thermo .label { font-size: 11px; letter-spacing: .2em; }
+.thermo .read { display: flex; align-items: baseline; gap: 8px; color: var(--ink); }
+.thermo .deg { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.thermo .deg small { font-size: 13px; font-weight: 500; margin-left: 1px; }
+.thermo .mood { font-size: 13px; color: var(--muted); }
+.bar { width: 132px; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0%; background: var(--btn); border-radius: inherit; transition: width .8s ease; }
+
+.count { font-variant-numeric: tabular-nums; }
+.count b { color: var(--ink); font-size: 15px; margin-left: 4px; }
+
+.clear {
+  font: inherit; font-size: 13px; color: var(--ink);
+  background: transparent; border: 1px solid var(--line); border-radius: 999px;
+  padding: 10px 16px; min-height: 40px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color .2s ease, background .2s ease;
+}
+.clear:hover { border-color: var(--muted); }
+.clear:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* button size follows the screen: phone portrait, phone landscape, desktop */
+:root { --cup-size: min(56vw, 44vh, 212px); }
+@supports (height: 1svh) { :root { --cup-size: min(56vw, 44svh, 212px); } }
+
+@media (max-width: 480px) {
+  .hud { font-size: 12px; }
+  .hud.top { padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
+  .hud.bottom { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .brand { font-size: 15px; }
+  .thermo .deg { font-size: 19px; }
+  .bar { width: 104px; }
+  .hint { font-size: 12px; }
+}
+@media (max-height: 460px) {
+  .hint { display: none; }
+  .thermo .label { display: none; }
+  .hud.top { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+  .hud.bottom { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word.in { animation: none; opacity: 1; }
+  .ring { display: none; }
+  .heat, .bar i { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="heat" id="heat"></div>
+<div class="stage" id="stage" aria-hidden="true"></div>
+
+<div class="center">
+  <div class="cup-wrap" id="cupWrap">
+    <button class="cup" id="cup" type="button" aria-label="じんわりしみるよ（押すと、あったかい言葉が落ちてきます）">
+      <span>じんわり</span><span>しみるよ</span>
+    </button>
+    <p class="hint">押すと、ひとつ。長押しで、どんどん。</p>
+  </div>
+</div>
+
+<header class="hud top">
+  <div class="brand">じんわり</div>
+  <div class="thermo" aria-live="polite">
+    <span class="label">湯加減</span>
+    <div class="read"><span class="mood" id="mood">まだ肌寒い</span><span class="deg" id="deg">18.0<small>℃</small></span></div>
+    <div class="bar"><i id="bar"></i></div>
+  </div>
+</header>
+
+<footer class="hud bottom">
+  <div class="count">しみた言葉<b id="count">0</b></div>
+  <button class="clear" id="clear" type="button">片づける</button>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script>
+(() => {
+  const WORDS = [
+    ["柚子湯", "yuzu"], ["ココア", "cocoa"], ["甘酒", "yuzu"], ["おでん", "ember"],
+    ["味噌汁", "cocoa"], ["生姜湯", "yuzu"], ["焼き芋", "ember"], ["湯たんぽ", "ume"],
+    ["こたつ", "ember"], ["葛湯", "ume"], ["ほうじ茶", "cocoa"], ["雑炊", "matcha"],
+    ["毛布", "ume"], ["足湯", "matcha"], ["露天風呂", "matcha"], ["ホットミルク", "yuzu"],
+    ["煮込みうどん", "ember"], ["肉まん", "yuzu"], ["熱燗", "ume"], ["湯豆腐", "matcha"],
+    ["おかゆ", "yuzu"], ["銭湯", "matcha"], ["ぜんざい", "ume"], ["日向ぼっこ", "yuzu"],
+    ["マフラー", "ume"], ["焚き火", "ember"], ["ゆず茶", "yuzu"], ["鍋焼きうどん", "ember"],
+    ["はちみつレモン", "yuzu"], ["卵酒", "yuzu"], ["おかえり", "ume"], ["手編みの靴下", "ume"],
+    ["ほっとレモン", "yuzu"], ["縁側", "matcha"], ["抹茶ラテ", "matcha"], ["チャイ", "cocoa"],
+    ["ポタージュ", "yuzu"], ["しょうが焼き", "ember"], ["お汁粉", "cocoa"], ["温泉", "matcha"],
+    ["カイロ", "ember"], ["ホットケーキ", "cocoa"], ["湯気", "matcha"], ["お疲れさま", "ume"],
+    ["けんちん汁", "cocoa"], ["ミルクティー", "cocoa"], ["ふとん", "ume"], ["ストーブ", "ember"]
+  ];
+
+  const stage = document.getElementById("stage");
+  const cup = document.getElementById("cup");
+  const heatEl = document.getElementById("heat");
+  const degEl = document.getElementById("deg");
+  const moodEl = document.getElementById("mood");
+  const barEl = document.getElementById("bar");
+  const countEl = document.getElementById("count");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const BASE_T = 18, MAX_T = 42, STEP_T = 0.6;
+  // how many words fit before the oldest ones melt away: scales with screen area
+  function maxItems() {
+    const { w, h } = size();
+    return Math.max(28, Math.min(130, Math.round((w * h) / 9000)));
+  }
+  let count = 0;
+  let bag = [];
+
+  function nextWord() {
+    if (!bag.length) {
+      bag = WORDS.slice();
+      for (let i = bag.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [bag[i], bag[j]] = [bag[j], bag[i]];
+      }
+    }
+    return bag.pop();
+  }
+
+  function moodFor(t) {
+    if (t < 24) return "まだ肌寒い";
+    if (t < 31) return "ほんのり";
+    if (t < 37) return "ぽかぽか";
+    if (t < 41) return "じんわり";
+    return "いい湯加減";
+  }
+
+  function renderTemp() {
+    const t = Math.min(MAX_T, BASE_T + count * STEP_T);
+    const r = (t - BASE_T) / (MAX_T - BASE_T);
+    degEl.innerHTML = t.toFixed(1) + "<small>℃</small>";
+    moodEl.textContent = moodFor(t);
+    barEl.style.width = (r * 100).toFixed(1) + "%";
+    heatEl.style.setProperty("--heat", (r * 0.55).toFixed(3));
+    countEl.textContent = count;
+  }
+
+  if (!window.Matter) {
+    cup.addEventListener("click", () => { count++; renderTemp(); });
+    console.error("Matter.js did not load");
+    return;
+  }
+
+  const { Engine, Bodies, Body, Composite } = Matter;
+  const engine = Engine.create({ gravity: { x: 0, y: 0.6 } });
+  engine.positionIterations = 8;
+  engine.velocityIterations = 6;
+
+  const items = [];
+  let walls = [];
+  let cupBody = null;
+
+  function size() { return { w: stage.clientWidth, h: stage.clientHeight }; }
+
+  function buildBounds() {
+    if (walls.length) Composite.remove(engine.world, walls);
+    if (cupBody) Composite.remove(engine.world, cupBody);
+    const { w, h } = size();
+    const t = 200;
+    walls = [
+      Bodies.rectangle(w / 2, h + t / 2, w * 3, t, { isStatic: true, friction: 0.9 }),
+      Bodies.rectangle(-t / 2, h / 2 - h, t, h * 4, { isStatic: true }),
+      Bodies.rectangle(w + t / 2, h / 2 - h, t, h * 4, { isStatic: true })
+    ];
+    const r = cup.getBoundingClientRect();
+    cupBody = Bodies.circle(r.left + r.width / 2, r.top + r.height / 2, r.width / 2, { isStatic: true, friction: 0.25 });
+    Composite.add(engine.world, [...walls, cupBody]);
+    // after rotating the phone or the address bar moving, pull words back inside the screen
+    for (const it of items) {
+      const p = it.body.position;
+      const nx = Math.min(Math.max(p.x, it.w / 2 + 4), Math.max(it.w / 2 + 4, w - it.w / 2 - 4));
+      const ny = Math.min(p.y, h - it.h / 2 - 2);
+      if (nx !== p.x || ny !== p.y) {
+        Body.setPosition(it.body, { x: nx, y: ny });
+        Body.setVelocity(it.body, { x: 0, y: 0 });
+      }
+    }
+    while (items.length > maxItems()) retire(items.shift());
+  }
+
+  function drop() {
+    const [text, cat] = nextWord();
+    const el = document.createElement("div");
+    el.className = "word c-" + cat;
+    el.textContent = text;
+    stage.appendChild(el);
+    const w = el.offsetWidth, h = el.offsetHeight;
+    const { w: sw } = size();
+    const margin = w / 2 + 8;
+    const x = margin + Math.random() * Math.max(1, sw - margin * 2);
+    const y = -h - Math.random() * 60;
+    const body = Bodies.rectangle(x, y, w, h, {
+      chamfer: { radius: h / 2 - 1 },
+      restitution: 0.04,
+      friction: 0.55,
+      frictionStatic: 0.9,
+      frictionAir: 0.028,
+      density: 0.0018,
+      angle: (Math.random() - 0.5) * 0.5
+    });
+    Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.02);
+    Composite.add(engine.world, body);
+    const it = { el, body, w, h };
+    items.push(it);
+    place(it);
+    requestAnimationFrame(() => el.classList.add("in"));
+
+    count++;
+    renderTemp();
+
+    while (items.length > maxItems()) retire(items.shift());
+  }
+
+  function retire(it) {
+    it.el.classList.add("out");
+    setTimeout(() => { Composite.remove(engine.world, it.body); it.el.remove(); }, 720);
+  }
+
+  function place(it) {
+    const p = it.body.position;
+    it.el.style.transform = `translate(${(p.x - it.w / 2).toFixed(2)}px, ${(p.y - it.h / 2).toFixed(2)}px) rotate(${it.body.angle.toFixed(4)}rad)`;
+  }
+
+  function ripple() {
+    if (reduce) return;
+    const r = document.createElement("span");
+    r.className = "ring";
+    cup.parentElement.appendChild(r);
+    r.addEventListener("animationend", () => r.remove());
+  }
+
+  let last = performance.now();
+  function tick(now) {
+    const dt = Math.min(now - last, 32);
+    last = now;
+    Engine.update(engine, dt);
+    const { h } = size();
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i];
+      if (it.body.position.y > h + 400) {
+        Composite.remove(engine.world, it.body);
+        it.el.remove();
+        items.splice(i, 1);
+        continue;
+      }
+      place(it);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // press = one word; hold = keep pouring
+  let holdTimer = null, pourTimer = null, lastPointer = 0;
+  function stopPour() {
+    clearTimeout(holdTimer); clearInterval(pourTimer);
+    holdTimer = pourTimer = null;
+    cup.classList.remove("pressing");
+  }
+  cup.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    e.preventDefault(); // no text selection or magnifier on long press
+    lastPointer = performance.now();
+    try { cup.setPointerCapture(e.pointerId); } catch (_) {}
+    stopPour();
+    cup.classList.add("pressing");
+    drop(); ripple();
+    holdTimer = setTimeout(() => {
+      pourTimer = setInterval(() => { drop(); ripple(); }, 190);
+    }, 420);
+  });
+  ["pointerup", "pointercancel", "lostpointercapture", "blur"].forEach(ev => cup.addEventListener(ev, stopPour));
+  cup.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") stopPour(); });
+  cup.addEventListener("contextmenu", (e) => e.preventDefault());
+  cup.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
+  document.addEventListener("visibilitychange", () => { if (document.hidden) stopPour(); });
+  cup.addEventListener("click", (e) => {
+    // taps and mouse clicks are handled on pointerdown; this is for Enter / Space
+    if (performance.now() - lastPointer < 800) return;
+    drop(); ripple();
+  });
+
+  document.getElementById("clear").addEventListener("click", () => {
+    while (items.length) retire(items.pop());
+    count = 0;
+    renderTemp();
+  });
+
+  let resizeTimer;
+  function onResize() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(buildBounds, 120);
+  }
+  window.addEventListener("resize", onResize);
+  window.addEventListener("orientationchange", () => setTimeout(buildBounds, 350));
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", onResize);
+
+  const fontsReady = document.fonts && document.fonts.ready
+    ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))])
+    : Promise.resolve();
+
+  fontsReady.then(() => {
+    buildBounds();
+    renderTemp();
+    requestAnimationFrame((t) => { last = t; tick(t); });
+    // a few words already seeping in, so the page is never empty
+    for (let i = 0; i < 6; i++) setTimeout(drop, 250 + i * 160);
+  });
+})();
+</script>
+</body>
+</html>
